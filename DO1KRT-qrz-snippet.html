@@ -1,0 +1,1156 @@
+
+<style>
+/* DO1KRT — Modern Amateur Radio Station */
+.dk-page{
+  --bg:#07090d;--panel:#10151d;--panel2:#0c1118;--border:#263241;
+  --accent:#3b82f6;--accent-soft:#172b4d;--text:#f5f7fa;
+  --text-dim:#94a3b8;--muted:#64748b;
+  max-width:1180px;margin:0 auto;padding:0 22px 52px;color:var(--text);
+  background:
+    radial-gradient(circle at 85% 0%,rgba(59,130,246,.10),transparent 28rem),
+    linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px),var(--bg);
+  background-size:auto,42px 42px,42px 42px,auto;
+  font-family:"IBM Plex Sans",Arial,sans-serif;line-height:1.65
+}
+.dk-page *{box-sizing:border-box}.dk-mono{font-family:"IBM Plex Mono","Courier New",monospace}
+
+.dk-readout{
+  position:relative;overflow:hidden;margin:22px 0 14px;padding:30px 34px;
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:18px 28px;
+  border:1px solid var(--border);border-radius:14px;
+  background:linear-gradient(135deg,rgba(59,130,246,.15),transparent 48%),var(--panel);
+  box-shadow:0 18px 50px rgba(0,0,0,.25)
+}
+.dk-readout-identity{position:relative;z-index:1;display:flex;align-items:center;gap:20px;min-width:0;max-width:100%}
+.dk-readout-image{display:block;width:96px;height:96px;flex:0 0 auto;object-fit:contain;border:1px solid var(--border);border-radius:10px;background:var(--panel2)}
+.dk-readout-call{position:relative;z-index:1;font-family:"IBM Plex Mono",monospace;font-size:clamp(40px,7vw,68px);line-height:1;font-weight:600;letter-spacing:.03em}
+.dk-readout-kicker{display:block;margin-bottom:10px;color:var(--accent);font-size:21px !important;line-height:1.2;letter-spacing:.14em;font-weight:600}
+.dk-readout-meta{position:relative;z-index:1;max-width:none;color:var(--text-dim);font-family:"IBM Plex Mono",monospace;font-size:clamp(14px,1.2vw + 10px,21px) !important;font-weight:500;letter-spacing:.04em;text-align:right}
+.dk-readout-images{display:flex;align-items:center;gap:12px;flex:0 0 auto}
+.dk-readout-meta span{color:var(--accent)}
+
+/* ===== Viertelkreis-Akzent ganz oben rechts (Readout-Leiste) =====
+   Reines CSS ueber ::before -> kein zusaetzliches HTML-Element, kein
+   JavaScript, uebersteht also den QRZ-Filter unveraendert.
+   Die Karte hat bereits overflow:hidden, der Kreis wird sauber an der
+   rechten oberen Kartenecke beschnitten; Call/Bilder/Meta liegen mit
+   z-index:1 darueber.
+   GROESSE:  --dk-q aendern (Standard 170px, mobil 120px)
+   FARBE:    rgba(96,165,250,..) = Ringe | rgba(59,130,246,..) = Glow
+   RINGE:    die Prozentwerte 43% / 68% / 91% (Anteil vom Radius)     */
+.dk-readout::before{
+  --dk-q:170px;
+  content:"";position:absolute;top:0;right:0;z-index:0;pointer-events:none;
+  width:var(--dk-q);height:var(--dk-q);
+  border-radius:0 0 0 100%;
+  box-shadow:inset 0 0 0 1px rgba(96,165,250,.28);
+  background:
+    radial-gradient(circle var(--dk-q) at 100% 0%,
+      transparent 0 43%,rgba(96,165,250,.34) 43% 44%,
+      transparent 44% 68%,rgba(96,165,250,.24) 68% 69%,
+      transparent 69% 91%,rgba(96,165,250,.15) 91% 92%,transparent 92%),
+    radial-gradient(circle var(--dk-q) at 100% 0%,
+      rgba(59,130,246,.30),rgba(59,130,246,.08) 45%,rgba(59,130,246,0) 72%)
+}
+@media(max-width:620px){
+  .dk-readout::before{--dk-q:120px}
+}
+
+/* ===== Weltzeituhr (extern, Netlify) – volle Breite unter der Readout-Leiste =====
+   Live-Uhrwerk tickt IM iFrame (eigene Netlify-Seite) – laeuft daher auch im
+   qrz.com-CMS (das eigene Script-Tags entfernt). Der native Karten-Nachbau
+   (.dk-wc-grid) liegt darunter und ist nur sichtbar, wenn das iFrame nicht
+   geladen werden kann (Vorschau / Offline); per .dk-js-slot tickt er auf
+   Systemen mit JavaScript ebenfalls live. */
+.dk-worldclock{position:relative;z-index:1;margin:0 0 24px;overflow:hidden;border:1px solid var(--border);border-radius:14px;background:linear-gradient(135deg,rgba(59,130,246,.10),transparent 55%),var(--panel);box-shadow:0 18px 50px rgba(0,0,0,.25)}
+.dk-wc-head{display:flex;align-items:center;gap:10px;padding:13px 18px 0}
+.dk-wc-head::before{content:"";width:4px;height:20px;border-radius:4px;background:var(--accent);box-shadow:0 0 14px rgba(59,130,246,.35)}
+.dk-wc-head h3{margin:0;color:var(--text);font-size:15px;font-weight:600;letter-spacing:.02em}
+.dk-wc-live{display:inline-flex;align-items:center;gap:6px;color:#34d399;border:1px solid rgba(52,211,153,.35);background:rgba(52,211,153,.08);border-radius:5px;padding:2px 8px;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em}
+.dk-wc-live i{width:6px;height:6px;border-radius:50%;background:#34d399;box-shadow:0 0 8px rgba(52,211,153,.9);animation:dk-wc-pulse 1.6s ease-in-out infinite}
+@keyframes dk-wc-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.dk-wc-open{margin-left:auto;color:var(--text-dim);font-size:12px;text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;background:rgba(255,255,255,.02);white-space:nowrap}
+.dk-wc-open:hover{color:var(--accent);border-color:#365173}
+.dk-wc-body{position:relative;margin-top:11px;height:min(52vw,520px);min-height:320px;background:#05070a}
+.dk-wc-grid{display:none} /* Fallback-Karten ausgeblendet – Live-Karte kommt aus dem iFrame */
+.dk-wc-iframe{position:absolute;left:0;top:0;width:100%;height:100%;border:0;display:block;background:#05070a;border-radius:0 0 13px 13px}
+.dk-js-slot{display:none}
+@media(max-width:620px){
+  .dk-wc-body{height:260px;min-height:240px}
+}
+@media(min-width:1100px){
+  .dk-wc-body{height:540px}
+}
+
+.dk-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 0 30px}
+.dk-stat{padding:15px 17px;border:1px solid var(--border);border-radius:10px;background:var(--panel2)}
+.dk-stat strong{display:block;color:var(--text);font-family:"IBM Plex Mono",monospace;font-size:21px;line-height:1.2}
+.dk-stat span{display:block;margin-top:5px;color:var(--muted);font-family:"IBM Plex Mono",monospace;font-size:16px;letter-spacing:.12em}
+
+.dk-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:30px;align-items:start}
+.dk-sidebar{display:flex;flex-direction:column;gap:12px;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;scrollbar-width:thin;padding-right:2px}.dk-main{min-width:0}
+
+.dk-card,.dk-panel,.dk-widget{background:linear-gradient(180deg,rgba(255,255,255,.018),transparent),var(--panel);border:1px solid var(--border);border-radius:12px}
+.dk-card{padding:17px 18px}.dk-card h4{margin:0 0 11px;color:var(--muted);font-family:"IBM Plex Mono",monospace;font-size:16px;letter-spacing:.13em;text-transform:uppercase;font-weight:600}
+.dk-card ul{list-style:none;margin:0;padding:0;font-size:13px}.dk-card li{margin:7px 0}
+.dk-card a{color:var(--text-dim);text-decoration:none;transition:color .18s}.dk-card a:hover{color:var(--accent)}
+.dk-card .dk-big{font-family:"IBM Plex Mono",monospace;font-size:21px;color:var(--text);font-weight:600}
+.dk-card .dk-sub{font-size:12px;color:var(--text-dim);margin-top:2px}
+.dk-card img{width:auto;max-width:100%;max-height:30px;border-radius:3px;margin-top:9px;display:block}
+
+/* ===== Bilderbox unter Station Call ===== */
+.dk-callplates{display:flex;flex-direction:column;gap:12px;min-width:0}
+.dk-card.dk-callplates img{display:block;width:100%;max-width:100%;height:auto;max-height:none;margin:0;flex:0 0 auto;border-radius:6px}
+
+.dk-section{margin-bottom:38px}.dk-section-head{display:flex;align-items:center;gap:10px;margin-bottom:13px;padding-bottom:9px;border-bottom:1px solid var(--border)}
+.dk-section-head::before{content:"";width:4px;height:20px;border-radius:4px;background:var(--accent);box-shadow:0 0 14px rgba(59,130,246,.35)}
+.dk-section-head h2{margin:0;color:var(--text);font-size:21px;line-height:1.25;font-weight:600;letter-spacing:-.015em}
+.dk-section-head .dk-tag{margin-left:auto;color:var(--accent);border:1px solid #294b78;background:rgba(59,130,246,.06);border-radius:5px;padding:3px 7px;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em}
+
+/* ===== Luftbild in der Box Geographische Lage ===== */
+.dk-location-image{display:block;width:100%;max-width:100%;height:auto;margin:0;border:1px solid var(--border);border-radius:10px}
+
+.dk-panel{padding:24px 27px}.dk-panel p{margin:0 0 15px}.dk-panel p:last-child{margin-bottom:0}.dk-panel strong{font-weight:600}
+
+/* ===== Strong-Texte farblich hervorheben (Accent-Blau) ===== */
+.dk-page strong{color:var(--accent)}
+
+.dk-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.dk-photo{margin:0;overflow:hidden;background:var(--panel);border:1px solid var(--border);border-radius:12px;transition:transform .18s,border-color .18s}
+.dk-photo:hover{transform:translateY(-2px);border-color:#365173}
+.dk-photo img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#05070a}
+.dk-photo figcaption{padding:10px 13px 12px;color:var(--text-dim);font-size:12.5px}
+.dk-photo.dk-photo-wide{grid-column:span 2}.dk-photo.dk-photo-wide img{aspect-ratio:16/7}
+
+.dk-eq-group{margin:0 0 25px;padding-bottom:22px;border-bottom:1px solid var(--border)}
+.dk-eq-group:last-child{margin-bottom:0;padding-bottom:0;border-bottom:0}
+.dk-eq-group h3{margin:0 0 10px;color:var(--accent);font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.dk-eq-group ul{margin:0;padding-left:19px}.dk-eq-group li{margin-bottom:7px;font-size:14px}
+
+.dk-widget{padding:20px;text-align:center}.dk-widget .dk-note{margin:10px 0 0;color:var(--muted);font-size:11px}
+.dk-widget img{max-width:100%;height:auto;border-radius:6px}
+
+/* ===== Kopfbild ganz oben ===== */
+.dk-hero{position:relative;margin:2px 0 24px;overflow:hidden;border:1px solid var(--border);border-radius:14px;background:#05070a;box-shadow:0 18px 50px rgba(0,0,0,.25)}
+.dk-hero img{display:block;width:100%;height:auto}
+.dk-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 62%,rgba(7,9,13,.66));pointer-events:none}
+.dk-hero figcaption{position:absolute;left:17px;bottom:13px;z-index:1;color:#dbeafe;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;text-shadow:0 1px 10px rgba(0,0,0,.9);pointer-events:none}
+
+/* ===== HamQSL Funkwetter-Widget (Sidebar) ===== */
+.dk-weather img{max-height:none !important;width:auto;margin:2px auto 0;border-radius:6px}
+.dk-weather .dk-sub{text-align:center;margin-top:8px}
+.dk-cta{display:inline-block;padding:10px 18px;border:1px solid #31598c;border-radius:7px;background:var(--accent-soft);color:#dbeafe;font-weight:600;text-decoration:none}
+.dk-cta:hover{background:#1e3a66;border-color:var(--accent)}
+
+/* ===== Klick: Bild in eigenem Fenster in Originalgröße ===== */
+.dk-zoom{display:block;cursor:zoom-in;margin:0;padding:0;text-decoration:none;color:inherit}
+.dk-panel > .dk-zoom{margin:0 0 22px}
+
+/* ===== YouTube-Box (Sidebar) ===== */
+.dk-youtube ul{display:flex;flex-direction:column;gap:2px}
+.dk-youtube a{display:flex;align-items:flex-start;gap:9px;line-height:1.35}
+.dk-yt-play{
+  flex:0 0 auto;width:18px;height:14px;margin-top:3px;
+  border-radius:4px;background:#ff0000;position:relative
+}
+.dk-yt-play::after{
+  content:"";position:absolute;left:6px;top:3px;
+  border-style:solid;border-width:4px 0 4px 7px;
+  border-color:transparent transparent transparent #fff
+}
+
+/* ===== Friends-Box (Sidebar) ===== */
+.dk-friends ul{display:flex;flex-direction:column;gap:9px;margin:0;padding:0}
+.dk-friends li{margin:0;padding-left:17px;position:relative}
+.dk-friends li::before{content:"";position:absolute;left:2px;top:.5em;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.dk-friends a{line-height:1.4}
+
+/* ===== Honor & QSL Box (Sidebar): zwei vergrößerbare Bilder untereinander ===== */
+.dk-card.dk-honor{display:flex;flex-direction:column;gap:10px}
+.dk-card.dk-honor .dk-zoom{display:block;line-height:0}
+.dk-card.dk-honor img{width:100%;height:auto;max-height:none;margin:0;border-radius:6px}
+
+/* ===== Station-Call-Box: Bilder mit gleichmäßigem Innenabstand ===== */
+.dk-station-call-images{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:center;justify-items:center;gap:12px;
+  margin-top:10px;padding:8px 7px;
+  overflow:hidden;border:1px solid rgba(148,163,184,.13);border-radius:8px;
+  background:rgba(7,9,13,.28)
+}
+.dk-card.dk-station-call .dk-station-call-images img{
+  display:block;width:100%;max-width:82px;height:58px;max-height:58px;
+  margin:0;object-fit:contain;border-radius:4px
+}
+
+/* ===== Vergrößerbare Bilder in der Readout-Leiste ===== */
+.dk-readout-images .dk-zoom{flex:0 0 auto;line-height:0}
+
+/* ===== Award-Kacheln unter Software & Ratings ===== */
+.dk-awards{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;
+  padding:18px 16px;border:1px solid var(--border);border-radius:12px;
+  background-color:#02040a;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.9) 1px,transparent 1px),
+    radial-gradient(circle,rgba(180,200,255,.55) 1px,transparent 1px),
+    radial-gradient(circle,rgba(196,181,253,.45) 1px,transparent 1px);
+  background-size:52px 52px,79px 79px,37px 37px;
+  background-position:0 0,18px 28px,36px 10px
+}
+.dk-award{
+  display:block;margin:0;cursor:zoom-in;text-decoration:none;
+  background:rgba(5,7,10,.35);border-radius:8px;
+  transition:transform .18s,filter .18s
+}
+.dk-award:hover{transform:translateY(-3px) scale(1.04);filter:brightness(1.08)}
+.dk-award img{display:block;width:100%;height:auto;aspect-ratio:5/4;object-fit:contain;background:transparent}
+
+@media(max-width:860px){
+  .dk-layout{grid-template-columns:1fr}.dk-sidebar{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:none;overflow:visible}
+  .dk-readout-meta{text-align:left}
+  .dk-awards{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .dk-page{padding:0 13px 35px}.dk-readout{padding:23px 20px}.dk-readout-call{font-size:42px}
+  .dk-readout-identity{gap:12px}.dk-readout-images{gap:8px}.dk-readout-image{width:54px;height:54px;border-radius:8px}
+  .dk-readout-kicker{font-size:21px !important}
+  .dk-gallery{grid-template-columns:1fr}.dk-photo.dk-photo-wide{grid-column:span 1}
+  .dk-awards{grid-template-columns:repeat(2,minmax(0,1fr));padding:14px 12px;gap:10px}
+  .dk-sidebar,.dk-stats{grid-template-columns:1fr}.dk-panel{padding:19px 18px}.dk-section{margin-bottom:31px}
+}
+
+/* Bilder bleiben innerhalb ihrer jeweiligen Boxen */
+.dk-page img { max-width:100%; }
+.dk-card img, .dk-panel img, .dk-widget img, .dk-readout img {
+  box-sizing:border-box;
+}
+.dk-card > img, .dk-card .dk-callplates img {
+  width:100%;
+  height:auto;
+  object-fit:contain;
+}
+.dk-card:not(.dk-callplates) img {
+  max-height:100%;
+}
+.dk-callplates img {
+  max-height:220px;
+  object-fit:contain;
+}
+.dk-location-image {
+  max-height:520px;
+  object-fit:contain;
+}
+.dk-hero img {
+  width:100%;
+  height:auto;
+  max-height:none;
+  object-fit:initial;
+}
+.dk-card img[alt="Deutschland Flagge"],
+.dk-card img[alt="DOK G09 Logo"] {
+  width:auto;
+  height:auto;
+  max-width:100%;
+  max-height:64px;
+  object-fit:initial;
+}
+.dk-photo img {
+  max-width:100%;
+  height:clamp(180px, 24vw, 320px);
+  object-fit:contain;
+}
+.dk-photo.dk-photo-wide img {
+  height:auto;
+  max-height:360px;
+  object-fit:contain;
+}
+.dk-award img {
+  width:100%;
+  height:clamp(120px, 15vw, 210px);
+  object-fit:contain;
+}
+@media(max-width:620px){
+  .dk-photo img { height:220px; }
+  .dk-photo.dk-photo-wide img { height:auto; max-height:240px; }
+  .dk-callplates img { max-height:180px; }
+}
+
+/* ===== Besucher-Statistik in der Sidebar ===== */
+.dk-visitor-counters{display:grid;gap:12px}
+.dk-visitor-counters a{display:block;overflow:hidden;line-height:0;text-align:center}
+.dk-card.dk-visitors .dk-visitor-counters img{
+  display:block;width:auto;max-width:100%;height:auto;max-height:none;
+  margin:0 auto;border-radius:4px
+}
+.dk-card.dk-visitors .dk-cta{
+  display:block;max-width:100%;margin-top:14px;padding:9px 8px;
+  text-align:center;font-size:11px;line-height:1.45;white-space:normal
+}
+
+/* ===== Verabschiedungs-Box "vy 73 de DO1KRT" (Sidebar, unter Visitors) ===== */
+.dk-card.dk-farewell .dk-zoom{display:block;line-height:0;margin:0 0 4px}
+.dk-card.dk-farewell .dk-zoom img{display:block;width:100%;height:auto;max-height:none;margin:0;border-radius:6px}
+.dk-farewell ul{display:flex;flex-direction:column;margin:6px 0 0;padding:0;list-style:none}
+.dk-farewell li{margin:0;padding:6px 0;border-top:1px solid rgba(148,163,184,.10);font-size:12px;line-height:1.45;color:var(--text-dim)}
+.dk-farewell li:first-child{border-top:0}
+.dk-farewell .dk-fl{display:block;color:var(--accent);font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase}
+.dk-farewell-thanks{margin:10px 0 0;text-align:center;color:var(--accent);font-size:12px;font-weight:600}
+
+/* ===== Lauftext (Marquee) ganz oben ===== */
+.dk-marquee-bar{display:flex;align-items:center;gap:10px;margin:2px 0 16px}
+.dk-marquee{
+  flex:1 1 auto;min-width:0;height:46px;overflow:hidden;
+  display:flex;align-items:center;
+  border:1px solid var(--border);border-radius:10px;
+  background:linear-gradient(90deg,rgba(59,130,246,.16),rgba(59,130,246,.04)),var(--panel2)
+}
+.dk-marquee-track{
+  display:flex;flex:0 0 auto;white-space:nowrap;
+  animation:dk-marquee-scroll 16s linear infinite;
+  will-change:transform
+}
+.dk-marquee:hover .dk-marquee-track{animation-play-state:paused}
+.dk-marquee-text{
+  display:block;padding:0 26px;line-height:46px;
+  color:#60a5fa;font-family:Arial,sans-serif;font-size:16px
+}
+.dk-page .dk-marquee-text strong{color:#60a5fa}
+.dk-marquee-clipart{
+  flex:0 0 auto;width:auto;max-width:70px;height:46px;
+  margin:0;object-fit:contain;border:0;border-radius:0;background:transparent
+}
+@keyframes dk-marquee-scroll{
+  from{transform:translateX(0)}
+  to{transform:translateX(-50%)}
+}
+
+/* ===== Zeigende Hand über der Laufschrift (weist auf den WEB-Tab) =====
+   Position fein justieren: --point-x (Abstand von links, Fingermitte). */
+.dk-pointer{--point-x:120px;position:relative;height:52px;margin:0 0 4px}
+.dk-pointer .dk-point-hand{
+  position:absolute;left:var(--point-x);bottom:0;width:40px;height:53px;
+  transform:translateX(-50%);
+  filter:drop-shadow(0 0 9px rgba(59,130,246,.55));
+  animation:dk-point-bob 1.6s ease-in-out infinite
+}
+@keyframes dk-point-bob{
+  0%,100%{transform:translateX(-50%) translateY(0)}
+  50%{transform:translateX(-50%) translateY(-7px)}
+}
+@media (prefers-reduced-motion:reduce){
+  .dk-marquee{overflow-x:auto;scrollbar-width:none}
+  .dk-marquee-track{animation:none}
+}
+@media(max-width:900px){
+  .dk-pointer{--point-x:250px}
+}
+@media(max-width:620px){
+  .dk-marquee{height:38px}
+  .dk-marquee-text{padding:0 16px;line-height:38px;font-size:14px}
+  .dk-marquee-clipart{max-width:52px;height:38px}
+  .dk-pointer{--point-x:150px;height:44px}
+  .dk-pointer .dk-point-hand{width:32px;height:43px}
+}
+
+</style>
+
+
+<div class="dk-page">
+
+  <!-- ===== Lauftext ganz oben (entspricht dem alten wb_Marquee2 / ClipArt5) =====
+       Text ändern: beide [span class="dk-marquee-text"] bearbeiten
+       (die zweite Kopie dient nur dem nahtlosen Umlauf, für Leser ausgeblendet).
+       TEMPO: die "16s" in der CSS-Regel .dk-marquee-track aendern ->
+        10s = sehr schnell | 14s = schnell | 16s = zuegig (aktuell) | 22s = gemaechlich | 30s = wie vorher
+       Einmal durchlaufen = genau 16 Sekunden fuer beide Texte zusammen.
+       Grafik: Pfad unten anpassen - fehlt die Datei, blendet sie sich selbst aus. -->
+  <!-- ===== Zeigende Hand: weist über der Laufschrift auf den WEB-Tab =====
+       Position: in der CSS-Regel .dk-pointer über --point-x justieren. -->
+  <div class="dk-pointer" aria-hidden="true">
+    <svg class="dk-point-hand" viewBox="0 0 48 64" xmlns="http://www.w3.org/2000/svg">
+      <!-- Zeigefinger -->
+      <rect x="17" y="1" width="9" height="32" rx="4.5" fill="#60a5fa"/>
+      <!-- Knöchel der eingeklappten Finger -->
+      <circle cx="29.5" cy="30" r="3.4" fill="#60a5fa"/>
+      <circle cx="35.5" cy="31" r="3.4" fill="#60a5fa"/>
+      <circle cx="41" cy="32.5" r="3.2" fill="#60a5fa"/>
+      <!-- Handrücken / Faust -->
+      <rect x="13" y="28" width="31" height="26" rx="8" fill="#60a5fa"/>
+      <!-- Daumen -->
+      <rect x="8" y="31" width="8" height="14" rx="4" fill="#60a5fa"/>
+      <!-- Manschette -->
+      <rect x="14" y="52" width="28" height="11" rx="3" fill="#1d3a63"/>
+    </svg>
+  </div>
+
+  <div class="dk-marquee-bar">
+    <div class="dk-marquee" id="Marquee2">
+      <div class="dk-marquee-track">
+         <span class="dk-marquee-text"><strong>Click on the WEB Tab above to add your Callsign to my "Web" Contact List - Thanks</strong></span>
+        <span class="dk-marquee-text" aria-hidden="true"><strong>DO1KRT wishes all Amateur Radio Stations peace with their families and lasting good radio contacts that bring operators together worldwide.</strong></span>
+      </div>
+    </div>
+    
+  </div>
+
+  <!-- ===== Readout-Leiste ===== -->
+  <div class="dk-readout">
+    <div class="dk-readout-identity">
+      <div class="dk-readout-call"><span class="dk-readout-kicker">AMATEUR RADIO STATION</span>DO1KRT</div>
+      <div class="dk-readout-images">
+        <a class="dk-zoom" href="/hampages/do1krt/DO1KRT3.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+          <img class="dk-readout-image" src="/hampages/do1krt/DO1KRT3.jpg" alt="Grafik zu DO1KRT" decoding="async" />
+        </a>        
+        <a class="dk-zoom" href="/hampages/do1krt/rated_Image_kywe95kywe95kywe_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+          <img class="dk-readout-image" src="/hampages/do1krt/rated_Image_kywe95kywe95kywe_png.jpg" alt="Grafik zu DO1KRT" decoding="async" />
+        </a>
+        <a class="dk-zoom" href="/hampages/do1krt/animiertes_adler_bild_0042.gif" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+          <img class="dk-readout-image" src="/hampages/do1krt/animiertes_adler_bild_0042.gif" alt="Animierter Adler" decoding="async" />
+        </a>
+        <a class="dk-zoom" href="/hampages/do1krt/Herzlich_Willkommen_pg.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+          <img class="dk-readout-image" src="/hampages/do1krt/Herzlich_Willkommen_pg.jpg" alt="Herzlich Willkommen" decoding="async" />
+        </a>
+      </div>
+    </div>
+    <div class="dk-readout-meta">JO30RR &nbsp;·&nbsp; Eitorf/Stein &nbsp;·&nbsp; <span>DOK G09</span> &nbsp;·&nbsp; SWL DE2RTE</div>
+
+  </div>
+
+  <!-- ===== Weltzeituhr (extern, Luxartec-LED-Stil) – volle Breite =====
+       Deploy: Ordner weltzeituhr/ (index.html) nach Netlify hochladen
+       und die URL unten in src= sowie im "Extern öffnen"-Link eintragen.
+       Aktuell: https://profound-pony-49ee1d.netlify.app/
+       Cache-Bust: ?v=lux-3 nach jedem Deploy erhoehen.
+       Hoehe steuert .dk-wc-body in CSS (Desktop ~520px, mobil 260px). -->
+  <div class="dk-worldclock" aria-label="Weltzeituhr DO1KRT">
+    <div class="dk-wc-head">
+      <h3>Weltzeituhr</h3>
+      <span class="dk-wc-live"><i></i>LIVE</span>
+      <a class="dk-wc-open" href="https://profound-pony-49ee1d.netlify.app/?v=lux-3" target="_blank" rel="noopener noreferrer">Extern &ouml;ffnen &#8599;</a>
+    </div>
+    <div class="dk-wc-body">
+      <div class="dk-wc-grid" role="img" aria-label="Weltzeituhr: UTC-Offsets (Live-Zeiten nur mit JavaScript)">
+        <div class="dk-wc-card dk-wc-utc"><span class="dk-wc-loc">UTC</span><span class="dk-wc-time" id="dkWcTimeUtc">UTC+0</span><span class="dk-wc-date" id="dkWcDateUtc">ZULU</span></div>
+        <div class="dk-wc-card dk-wc-home"><span class="dk-wc-loc">Eitorf</span><span class="dk-wc-time" id="dkWcTimeEitorf">UTC+1/2</span><span class="dk-wc-date" id="dkWcDateEitorf">BERLIN</span></div>
+        <div class="dk-wc-card"><span class="dk-wc-loc">London</span><span class="dk-wc-time" id="dkWcTimeLondon">UTC+0/1</span><span class="dk-wc-date" id="dkWcDateLondon">LONDON</span></div>
+        <div class="dk-wc-card"><span class="dk-wc-loc">Paris</span><span class="dk-wc-time" id="dkWcTimeParis">UTC+1/2</span><span class="dk-wc-date" id="dkWcDateParis">PARIS</span></div>
+        <div class="dk-wc-card"><span class="dk-wc-loc">New York</span><span class="dk-wc-time" id="dkWcTimeNy">UTC-5/4</span><span class="dk-wc-date" id="dkWcDateNy">NEW YORK</span></div>
+        <div class="dk-wc-card"><span class="dk-wc-loc">Chicago</span><span class="dk-wc-time" id="dkWcTimeChicago">UTC-6/5</span><span class="dk-wc-date" id="dkWcDateChicago">CHICAGO</span></div>
+        <div class="dk-wc-card"><span class="dk-wc-loc">Los Angeles</span><span class="dk-wc-time" id="dkWcTimeLa">UTC-8/7</span><span class="dk-wc-date" id="dkWcDateLa">L.A.</span></div>
+        <div class="dk-wc-card"><span class="dk-wc-loc">Bangkok</span><span class="dk-wc-time" id="dkWcTimeBangkok">UTC+7</span><span class="dk-wc-date" id="dkWcDateBangkok">BANGKOK</span></div>
+        <div class="dk-wc-card"><span class="dk-wc-loc">Tokio</span><span class="dk-wc-time" id="dkWcTimeTokyo">UTC+9</span><span class="dk-wc-date" id="dkWcDateTokyo">TOKYO</span></div>
+        <div class="dk-wc-card"><span class="dk-wc-loc">Sydney</span><span class="dk-wc-time" id="dkWcTimeSydney">UTC+10/11</span><span class="dk-wc-date" id="dkWcDateSydney">SYDNEY</span></div>
+        <div class="dk-wc-card"><span class="dk-wc-loc">Auckland</span><span class="dk-wc-time" id="dkWcTimeAuckland">UTC+12/13</span><span class="dk-wc-date" id="dkWcDateAuckland">AUCKLAND</span></div>
+      </div>
+      <iframe class="dk-wc-iframe" src="https://profound-pony-49ee1d.netlify.app/?v=lux-3" title="Weltzeituhr DO1KRT – live" scrolling="no"></iframe>
+    </div>
+  </div>
+
+  <!-- Uhrwerk Weltzeituhr-Fallback (versteckt; im Browser ausgeführt) -->
+  <div class="dk-js-slot" aria-hidden="true">
+    <script>
+    (function(){
+      var cities=[
+        {suf:'Utc',zone:'Etc/UTC'},
+        {suf:'Eitorf',zone:'Europe/Berlin'},
+        {suf:'London',zone:'Europe/London'},
+        {suf:'Paris',zone:'Europe/Paris'},
+        {suf:'Ny',zone:'America/New_York'},
+        {suf:'Chicago',zone:'America/Chicago'},
+        {suf:'La',zone:'America/Los_Angeles'},
+        {suf:'Bangkok',zone:'Asia/Bangkok'},
+        {suf:'Tokyo',zone:'Asia/Tokyo'},
+        {suf:'Sydney',zone:'Australia/Sydney'},
+        {suf:'Auckland',zone:'Pacific/Auckland'}
+      ];
+      var tO={hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false};
+      var dO={day:'2-digit',month:'2-digit',year:'numeric'};
+      function tick(){
+        var now=new Date(),i,c,te,de,to,do_;
+        for(i=0;i<cities.length;i++){
+          c=cities[i];
+          te=document.getElementById('dkWcTime'+c.suf);
+          de=document.getElementById('dkWcDate'+c.suf);
+          if(!te||!de)continue;
+          to={hour:tO.hour,minute:tO.minute,second:tO.second,hour12:tO.hour12,timeZone:c.zone};
+          do_={day:dO.day,month:dO.month,year:dO.year,timeZone:c.zone};
+          try{
+            te.textContent=now.toLocaleTimeString('de-DE',to);
+            de.textContent=now.toLocaleDateString('de-DE',do_);
+          }catch(e){}
+        }
+      }
+      tick();setInterval(tick,1000);
+    })();
+    </script>
+  </div>
+
+  <!-- ===== Kopfbild (unter der Readout-Leiste) ===== -->
+  <figure class="dk-hero">
+    <a class="dk-zoom" href="/hampages/do1krt/_d0f8_4f13_a7cd_43910cb58435_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+      <img src="/hampages/do1krt/_d0f8_4f13_a7cd_43910cb58435_png.jpg" alt="DO1KRT Antennenanlage mit Domblick" />
+    </a>
+    <figcaption>DO1KRT &bull; Domblick</figcaption>
+  </figure>
+
+
+  <div class="dk-stats" aria-label="Station statistics">
+    <div class="dk-stat"><strong>282</strong><span>DXCC WORKED</span></div>
+    <div class="dk-stat"><strong>15m / 10m</strong><span>FAVOURITE BANDS</span></div>
+    <div class="dk-stat"><strong>1998</strong><span>LICENSED SINCE</span></div>
+  </div>
+
+  <div class="dk-layout">
+
+    <!-- ===== Sidebar ===== -->
+    <aside class="dk-sidebar">
+      <div class="dk-card">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="https://www.darc.de" target="_blank" rel="noopener noreferrer">DARC e.V.</a></li>
+          <li><a href="https://www.qrz.com/db/DO1KRT" target="_blank" rel="noopener noreferrer">QRZ.com Profil</a></li>
+          <li><a href="https://lotw.arrl.org" target="_blank" rel="noopener noreferrer">ARRL LoTW</a></li>
+          <li><a href="https://www.solarham.net" target="_blank" rel="noopener noreferrer">SolarHam Weather</a></li>
+          <li><a href="https://spaceweather.com/" target="_blank" rel="noopener noreferrer">Space Weather</a></li>
+          <li><a href="https://50ohm.de/index.html" target="_blank" rel="noopener noreferrer">DARC 50Ohm</a></li>
+        </ul>
+      </div>
+
+      <!-- ===== YouTube: href + Titel anpassen.
+           Weiteres Video: kompletten [li]-Block kopieren. ===== -->
+      <div class="dk-card dk-youtube">
+        <h4>YouTube</h4>
+        <ul>
+          <li>
+            <a href="https://www.youtube.com/watch?v=rsHgDbYDNq4" target="_blank" rel="noopener noreferrer">
+              <span class="dk-yt-play" aria-hidden="true"></span>
+              DO1KRT Eantenna 3BMOX 3 Band Beam, 7 EL. MOXON 10/15/20m
+            </a>
+          </li>
+          <li>
+            <a href="https://www.youtube.com/watch?v=-OuEXUViZ0A" target="_blank" rel="noopener noreferrer">
+              <span class="dk-yt-play" aria-hidden="true"></span>
+              DO1KRT - Ralf - Germá
+            </a>
+          </li>
+          <li>
+            <a href="https://www.youtube.com/watch?v=lGa6wPtWyjs" target="_blank" rel="noopener noreferrer">
+              <span class="dk-yt-play" aria-hidden="true"></span>
+              OE1TOA de DO1KRT
+            </a>
+          </li>
+          <li>
+            <a href="https://www.youtube.com/watch?v=b8Wxmu0fzhI" target="_blank" rel="noopener noreferrer">
+              <span class="dk-yt-play" aria-hidden="true"></span>
+              EC1CW: Germany (DO1KRT)
+            </a>
+          </li>
+          <li>
+            <a href="https://www.youtube.com/watch?v=_Qm5qfM2NhY" target="_blank" rel="noopener noreferrer">
+              <span class="dk-yt-play" aria-hidden="true"></span>
+              PY3EW/DO1KRT
+            </a>
+          </li> 
+          <li>
+            <a href="https://www.youtube.com/watch?v=5jvLcUK8PkE" target="_blank" rel="noopener noreferrer">
+              <span class="dk-yt-play" aria-hidden="true"></span>
+              PY2KME X DO1KRT CONTATO COM ALEMANHA EM 28545 13/02/2015.
+            </a>
+          </li>         
+        </ul>
+      </div>
+
+      <!-- ===== Friends: hier Links von Freunden eintragen.
+           Weiterer Eintrag: einfach einen kompletten [li]-Block kopieren.
+           Format: [li][a href="https://..."]Rufzeichen - Beschreibung[/a][/li] ===== -->
+      <div class="dk-card dk-friends">
+        <h4>Friends</h4>
+        <ul>
+          <!-- Beispieleinträge – bitte href + Text ersetzen, weitere [li]-Blöcke beliebig ergänzen -->
+          <li>
+            <a href="https://www.qrz.com/db/DC7WH" >DC7WH Wilfried &ndash; Kölner OM aus G24, Webdesign dieser Seite</a>
+          </li>
+          <li>
+            <a href="https://www.qrz.com/db/DH6MB" >DH6MB Michael &ndash; OM aus Dülmen</a>
+          </li>
+          <li>
+            <a href="https://www.darc.de/der-club/distrikte/g/ortsverbaende/09/" >DARC G09 &ndash; Mein OV</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="dk-card">
+        <h4>Locator</h4>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div>
+            <div class="dk-big">JO30RR</div>
+            <div class="dk-sub" style="font-size:16px;">Eitorf/Stein</div>
+          </div>
+          <img alt="Wappen der Gemeinde Eitorf" src="/hampages/do1krt/Eitorf_Wappen.png" style="max-height:64px;width:auto;margin-top:0;" />
+        </div>
+      </div>
+
+      <div class="dk-card">
+        <h4>DOK G09</h4>
+        <div class="dk-sub" style="margin-bottom:2px;font-size:16px;">Ortsverband Bad Honnef</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:10px;">
+          <img alt="Deutschland Flagge" src="/hampages/do1krt/Germany.gif" style="margin-top:0;margin-left:auto;flex-shrink:0;" />
+          <img alt="DOK G09 Logo" src="/hampages/do1krt/G09.jpg" style="max-height:64px;width:auto;margin-top:0;margin-left:auto;flex-shrink:0;" />
+        </div>
+      </div>
+
+      <div class="dk-card dk-station-call">
+        <h4>Station Call</h4>
+        <div class="dk-big">DO1KRT</div>
+        <div class="dk-sub">SWL: DE2RTE</div>
+        <div class="dk-station-call-images">
+          <img alt="Animiertes On-Air-Schild" src="/hampages/do1krt/on_air_sign_flash_hc.gif" />
+          <img alt="Animierte Antennengrafik" src="/hampages/do1krt/antenne_0020.gif" />
+        </div>
+      </div>
+
+      <!-- ===== Bilderbox unter Station Call ===== -->
+      <div class="dk-card dk-callplates" role="group" aria-label="Rufzeichen- und DX-Grafiken">
+        <img src="/hampages/do1krt/callplate.png" alt="Rufzeichen-Grafik" loading="lazy" decoding="async" />
+        <a class="dk-zoom" href="/hampages/do1krt/pp_Image3_2026_08_26_at_19_39_00.jpeg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+          <img src="/hampages/do1krt/pp_Image3_2026_08_26_at_19_39_00.jpeg" alt="DX-Grafik" loading="lazy" decoding="async" />
+        </a>
+        <img src="/hampages/do1krt/callplate_dh6mb.png" alt="Rufzeichen DH6MB" loading="lazy" decoding="async" />
+      </div>
+
+      <!-- ===== Honor & QSL: zwei vergrößerbare Bilder untereinander ===== -->
+      <div class="dk-card dk-honor">
+        <h4>QSL &amp; Honor</h4>
+        <a class="dk-zoom" href="/hampages/do1krt/do1krt_1206629032.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+          <img src="/hampages/do1krt/do1krt_1206629032.jpg" alt="QSL 1206629032" loading="lazy" decoding="async" />
+        </a>
+        <a class="dk-zoom" href="/hampages/do1krt/_dc3e_4ec8_858b_cba1e0b9170f_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+          <img src="/hampages/do1krt/_dc3e_4ec8_858b_cba1e0b9170f_png.jpg" alt="QSL-Karte" loading="lazy" decoding="async" />
+        </a>
+      </div>
+
+      <!-- Live Funkwetter & Propagation (HamQSL) -->
+      <div class="dk-card dk-weather">
+        <h4>Live Funkwetter &amp; Propagation</h4>
+        <a href="https://www.hamqsl.com/solar.html" target="_blank" rel="noopener noreferrer" title="Solar-Terrestrial Data bereitgestellt von HamQSL">
+          <img src="https://www.hamqsl.com/solarvhf.php" alt="HamQSL Solar-Terrestrial Data &ndash; aktuelles Funkwetter und Propagation" />
+        </a>
+        <div class="dk-sub">Live solare Daten &bull; hamqsl.com</div>
+      </div>
+
+      <!-- Besucher-Statistik (Flag Counter) -->
+      <div class="dk-card dk-visitors">
+        <h4>Besucher-Statistik</h4>
+        <div class="dk-visitor-counters">
+          <a href="https://s05.flagcounter.com/more/a8S/" target="_blank" rel="noopener noreferrer">
+            <img src="https://s01.flagcounter.com/count2_US/a8S/bg_07090d/txt_FFFFFF/border_263241/columns_2/maxflags_250/viewers_0/labels_1/pageviews_1/flags_0/percent_0/" alt="Flag Counter" border="0" loading="lazy" decoding="async" />
+          </a>
+          <a href="https://s05.flagcounter.com/more/a8S/" target="_blank" rel="noopener noreferrer">
+            <img src="https://s01.flagcounter.com/count2_CA/a8S/bg_07090d/txt_FFFFFF/border_263241/columns_2/maxflags_250/viewers_0/labels_1/pageviews_1/flags_0/percent_0/" alt="Flag Counter" border="0" loading="lazy" decoding="async" />
+          </a>
+          <a href="https://s05.flagcounter.com/more/a8S/" target="_blank" rel="noopener noreferrer">
+            <img src="https://s05.flagcounter.com/count2/a8S/bg_07090d/txt_FFFFFF/border_263241/columns_2/maxflags_250/viewers_0/labels_1/pageviews_1/flags_0/percent_0/" alt="Flag Counter" border="0" loading="lazy" decoding="async" />
+          </a>
+        </div>
+        <a class="dk-cta" href="https://mapmyvisitors.com/web/1bxro" target="_blank" rel="noopener noreferrer">&raquo; Besucher-Weltkarte (MapMyVisitors) &laquo;</a>
+      </div>
+
+      <!-- ===== Verabschiedungen in aller Welt =====
+           Weiterer Eintrag: [li]-Block kopieren (Sprache + Gruß anpassen).
+           Bild: Besuch_der_page.jpg liegt unter /hampages/do1krt/ (Klick = Originalgröße). -->
+      <div class="dk-card dk-farewell">
+        <h4>vy 73 de DO1KRT</h4>
+        <a class="dk-zoom" href="/hampages/do1krt/Besuch_der_page.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+          <img src="/hampages/do1krt/Besuch_der_page.jpg" alt="Danke für den Besuch meiner Seite – vy 73 de DO1KRT" loading="lazy" decoding="async" />
+        </a>
+        <ul>
+          <li><span class="dk-fl">English</span><span dir="auto">Goodbye, 73, Best regards</span></li>
+          <li><span class="dk-fl">German</span><span dir="auto">Auf Wiederhören, 73, Viele Grüße</span></li>
+          <li><span class="dk-fl">French</span><span dir="auto">Au revoir, 73, Cordialement</span></li>
+          <li><span class="dk-fl">Spanish</span><span dir="auto">Adiós, Saludos, 73</span></li>
+          <li><span class="dk-fl">Italian</span><span dir="auto">Arrivederci, 73, Cordiali saluti</span></li>
+          <li><span class="dk-fl">Portuguese</span><span dir="auto">Adeus, 73, Saudações</span></li>
+          <li><span class="dk-fl">Dutch</span><span dir="auto">Tot ziens, 73</span></li>
+          <li><span class="dk-fl">Swedish</span><span dir="auto">Hej då, 73</span></li>
+          <li><span class="dk-fl">Finnish</span><span dir="auto">Näkemiin, 73</span></li>
+          <li><span class="dk-fl">Russian</span><span dir="auto">До свидания, 73, Всего доброго</span></li>
+          <li><span class="dk-fl">Polish</span><span dir="auto">Do widzenia, 73</span></li>
+          <li><span class="dk-fl">Czech</span><span dir="auto">Na shledanou, 73</span></li>
+          <li><span class="dk-fl">Chinese</span><span dir="auto">再见 (Zàijiàn), 73</span></li>
+          <li><span class="dk-fl">Japanese</span><span dir="auto">さようなら (Sayōnara), 73</span></li>
+          <li><span class="dk-fl">Korean</span><span dir="auto">안녕히 가세요, 73</span></li>
+          <li><span class="dk-fl">Arabic</span><span dir="auto">مع السلامة (Ma'a as-salama), 73</span></li>
+          <li><span class="dk-fl">Turkish</span><span dir="auto">Hoşça kal, 73</span></li>
+          <li><span class="dk-fl">Greek</span><span dir="auto">Αντίο, 73</span></li>
+          <li><span class="dk-fl">Hindi</span><span dir="auto">अलविदा (Alvida), 73</span></li>
+          <li><span class="dk-fl">Swahili</span><span dir="auto">Kwaheri, 73</span></li>
+        </ul>
+        <p class="dk-farewell-thanks">Thanks for visiting my page!</p>
+      </div>
+    </aside>
+
+    <!-- ===== Hauptspalte ===== -->
+    <main class="dk-main">
+
+      <!-- Willkommenstext -->
+      <section class="dk-section">
+        <div class="dk-section-head"><h2>Welcome to my Page!</h2></div>
+        <div class="dk-panel">
+          <p>Hallo und herzlich willkommen! Mein Name ist <strong>Ralf</strong> (geboren 1964 in K&ouml;ln), zu Hause im sch&ouml;nen Eitorf/Stein (Eitorfer Schweiz).</p>
+          <p><strong>Rufzeichen &amp; Daten:</strong><br />
+          &bull; Amateurfunk-Rufzeichen seit 06.11.1998: <strong>DO1KRT</strong><br />
+          &bull; SWL-Call: <strong>DE2RTE</strong><br />
+          &bull; Ortsverband: Bad Honnef (G09)<br />
+          &bull; Locator: JO30RR | H&ouml;he: ca. 234&ndash;270 m &uuml; NHN<br />
+          &bull; Koordinaten: 50.7349270 N, 7.4678630 O</p>
+          <p><strong>Funkbetrieb &amp; DX:</strong><br />
+          Meine bevorzugten B&auml;nder sind <strong>15m, 10m und 80m</strong>. Ich bin haupts&auml;chlich auf der Suche nach DX und neuen DXCCs auf dem 15m- und 10m-Band (bisher 282 DXCCs worked!).</p>
+          <p><strong>QSL-Hinweis:</strong><br />
+          Ich sammle keine Papierkarten (weder direkt noch via Bureau). Ich QSL ausschlie&szlig;lich &uuml;ber das <strong>ARRL Logbook of the World (LoTW)</strong> und halte meine eQSL-Eintr&auml;ge so gut wie m&ouml;glich aktuell.<br /><br />
+          <em>vy 73 de Ralf, DO1KRT</em></p>
+        </div>
+      </section>
+
+      <!-- Geographische Lage -->
+      <section class="dk-section">
+        <div class="dk-section-head"><h2>Geographische Lage</h2><span class="dk-tag">JO30RR</span></div>
+        <div class="dk-panel">
+          <a class="dk-zoom" href="/hampages/do1krt/STEIN_VON_OBEN_IM_RAHMEN_JO30RR.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+            <img class="dk-location-image" src="/hampages/do1krt/STEIN_VON_OBEN_IM_RAHMEN_JO30RR.jpg" alt="Eitorf/Stein von oben &ndash; Locator JO30RR" loading="lazy" decoding="async" />
+          </a>
+          <p><strong>Deutsch:</strong><br />
+          Eitorf ist am Mittellauf der Sieg im ehemaligen Auelgau gelegen. Die Gemeinde liegt zwischen Bergischem Land und Westerwald etwa 25 km &ouml;stlich von Bonn und 50 km s&uuml;d&ouml;stlich von K&ouml;ln. Die Nachbargemeinden sind im Norden die Gemeinde Ruppichteroth, im Osten die Gemeinde Windeck, im S&uuml;den die Ortsgemeinden Asbach (Westerwald), Buchholz (Westerwald) und Kircheib in Rheinland-Pfalz und im Westen die Stadt Hennef.</p>
+          <p>Die Gemeinde wird s&uuml;dlich der Sieg vom namensgebenden Eipbach geteilt, nach dem au&szlig;er Eipdorf also M&uuml;hleip, Obereip und das au&szlig;erhalb der Gemeinde liegende Kircheib benannt sind. Westlich davon flie&szlig;t der Krabach, der die Grenze zur Kommune Hennef bildet. Im Norden der Sieg m&uuml;nden der Ottersbach und der Schmelzbach ein.</p>
+          <p>Der Hohe Schaden ist mit 388 m die h&ouml;chste Erhebung der Gemeinde, weitere sind Hurst, die K&uuml;pp, der Richardsberg und die H&ouml;hensteine.</p>
+          <p><strong>English:</strong><br />
+          Eitorf is located on the middle course of the Sieg in the former Auelgau. The municipality is located between Bergisches Land and Westerwald about 25 km east of Bonn and 50 km southeast of Cologne. The neighboring municipalities are in the north the municipality Ruppichteroth, in the east the municipality Windeck, in the south the municipalities Asbach (Westerwald), Buchholz (Westerwald) and Kircheib in Rhineland-Palatinate and in the west the city Hennef.</p>
+          <p>The municipality is divided south of the Sieg by the eponymous Eipbach, after which in addition to Eipdorf also M&uuml;hleip, Obereip and the church located outside the municipality are named. To the west of it flows the Krabach, which forms the border with the Hennef commune. The Ottersbach and the Schmelzbach flow into the north of the Sieg.</p>
+          <p style="margin-bottom:0;">The Hohe Schaden is the highest elevation of the municipality with 388 m, others are Hurst, the K&uuml;pp, the Richardsberg and the H&ouml;hensteine.</p>
+        </div>
+      </section>
+
+      <!-- ===== Foto-Galerie: Shack & Station =====
+           Neues Bild hinzufügen: [figure class="dk-photo"]-Block kopieren,
+           src/alt/Bildtext anpassen. href am [a] auf dieselbe Bild-URL setzen.
+           Für ein breites Bild: Klasse "dk-photo dk-photo-wide"
+      -->
+      <section class="dk-section">
+        <div class="dk-section-head"><h2>Shack &amp; Station</h2></div>
+        <div class="dk-gallery">
+
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/_bf3d_4d90_af1f_134f1b5c96ee_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/_bf3d_4d90_af1f_134f1b5c96ee_png.jpg" alt="Station Setup EME Aufbau" />
+            </a>
+          </figure>
+
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/EIN_WAHRER_FREUND_MIT_TEXT.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/EIN_WAHRER_FREUND_MIT_TEXT.jpg" alt="DO1KRT Antennenanlage mit Domblick" />
+            </a>
+          </figure>
+
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/_82b2_467b_bbce_19dee80e8843_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/_82b2_467b_bbce_19dee80e8843_png.jpg" alt="Ansicht des Ham Shacks von DO1KRT" />
+            </a>
+          </figure>
+
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/2.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/2.jpg" alt="Funkstation und Transceiver Setup" />
+            </a>
+          </figure>
+
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/mage_2026_08_10_at_00_04_59_jpeg.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/mage_2026_08_10_at_00_04_59_jpeg.jpg" alt="Ausblick vom QTH zum Drachenfels" />
+            </a>
+          </figure>
+
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/mage_2019_12_31_at_15_04_45_jpeg.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/mage_2019_12_31_at_15_04_45_jpeg.jpg" alt="3 Band Beam 7 Element Moxon Antenne" />
+            </a>
+          </figure>
+
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/2_Mein_Shack.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/2_Mein_Shack.jpg" alt="Mein Shack" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/3_MEIN_Shack.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/3_MEIN_Shack.jpg" alt="Mein Shack" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/4_MEINShack.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/4_MEINShack.jpg" alt="Mein Shack" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/5_MEIN_Shack.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/5_MEIN_Shack.jpg" alt="Mein Shack" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/1_KIENZLE_UHREN_IM_CHACK_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/1_KIENZLE_UHREN_IM_CHACK_png.jpg" alt="Kienzle Uhren im Shack" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/LE_IM_RAHMEN_DO1KRT_IM_CHACK_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/LE_IM_RAHMEN_DO1KRT_IM_CHACK_png.jpg" alt="Im Rahmen DO1KRT im Shack" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/ENZLE_UHREN_IM_RAHMEN_DO1KRT_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/ENZLE_UHREN_IM_RAHMEN_DO1KRT_png.jpg" alt="Kienzle Uhren im Rahmen DO1KRT" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/E_UHREN_IM_RAHMEN_mein_TOP_1_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/E_UHREN_IM_RAHMEN_mein_TOP_1_png.jpg" alt="Uhren im Rahmen &ndash; mein Top 1" />
+            </a>
+          </figure>
+        </div>
+      </section>
+
+      <!-- Equipment -->
+      <section class="dk-section">
+        <div class="dk-section-head"><h2>Meine Funkbude &amp; Equipment</h2></div>
+        <div class="dk-panel">
+
+          <div class="dk-eq-group">
+            <h3>Transceiver &amp; Funkger&auml;te</h3>
+            <ul>
+              <li><strong>Icom IC-7300:</strong> HF/6/4m + 5 MHz Amateur-B&auml;nder, alle Modi (AM, FM, LSB, USB, CW, DATI), Echtzeitspektrum, TFT-Touchscreen, integrierter Antennentuner.</li>
+              <li><strong>Icom IC-9700:</strong> 144-, 430- und 1200-MHz-Allmode-Transceiver inkl. Satelliten-, DV- und DD-Modus mit drei Antennenbuchsen.</li>
+            </ul>
+          </div>
+
+          <div class="dk-eq-group">
+            <h3>Antennen &amp; Rotoren</h3>
+            <ul>
+              <li><strong>EA-Antenne:</strong> 7-Element/3-Band Beam mit Moxon-Strahler f&uuml;r 10/15/17/20m (Boom-L&auml;nge 318 cm, Drehradius 450 cm, 30 kg).</li>
+              <li><strong>Doppel-Zepp:</strong> F&uuml;r 10/15m sowie 80/160m Band.</li>
+              <li><strong>5070MOX:</strong> Dualband MOXON 50/4m.</li>
+              <li><strong>Anjo YA014410:</strong> 144 MHz 10-Element Horizontal (2m-Band).</li>
+              <li><strong>Flexa FX7015:</strong> 433 MHz 15-Element Horizontal (70cm-Band).</li>
+              <li><strong>Diamond X-7000:</strong> 2m / 70cm / 23cm-Band, Dachmontage.</li>
+              <li><strong>6m Band Dipol:</strong> 48&ndash;52 MHz, SWR 1.5.</li>
+              <li><strong>Rotoren:</strong> Yaesu G-1000DXC &amp; Yaesu G450C.</li>
+            </ul>
+          </div>
+
+          <div class="dk-eq-group">
+            <h3>Mikrofone &amp; Headsets</h3>
+            <ul>
+              <li><strong>BM 800:</strong> Kondensator-Mikrofon-Set, Studio-Tisch-Mikrofon mit St&auml;nder.</li>
+              <li><strong>Standmikrofon GM-58s:</strong> Empfindlichkeit &gt; 8 mV/Pa, 100&ndash;6000 Hz.</li>
+              <li><strong>Heil Pro7 Headset:</strong> iC Elektret-Element + HC-74 Kapsel, ausgelegt f&uuml;r pr&auml;gnantes SSB im Pileup.</li>
+              <li><strong>Sennheiser HME 410-1:</strong> Kopfh&ouml;rer (Pilot / Bundeswehr Flugsicherung).</li>
+            </ul>
+          </div>
+
+          <div class="dk-eq-group">
+            <h3>Messger&auml;te, Strom, Audio &amp; Wetter</h3>
+            <ul>
+              <li><strong>DAIWA CN-901HP &amp; CN-801HP:</strong> SWR/Leistungsmessger&auml;te 1,8&ndash;200 MHz bis 2000 W.</li>
+              <li><strong>Universal Koppler:</strong> Falscher Fuchskreis (10&ndash;160m).</li>
+              <li><strong>Jetfon PC 55 SW:</strong> Schaltnetzteil (9&ndash;15V, 50A Dauer, 55A Spitze).</li>
+              <li><strong>Lautsprecher:</strong> Icom SP-38 &amp; Yaesu SP-2000.</li>
+              <li><strong>Wetterstation:</strong> Bresser Funk-Wettercenter mit 5-in-1 Au&szlig;ensensor.</li>
+            </ul>
+          </div>
+
+        </div>
+      </section>      
+
+      <!-- Meine Galerie -->
+      <section class="dk-section">
+        <div class="dk-section-head"><h2>Meine Galerie</h2></div>
+        <div class="dk-gallery">
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/rated_Image_boanz4boanz4boan_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/rated_Image_boanz4boanz4boan_png.jpg" alt="Harlekin Grafik und Software Rating" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Play_at_the_Buttons_Top_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Play_at_the_Buttons_Top_png.jpg" alt="Play at the Buttons (Top)" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Mittelpunkt_Gartenhaus_.jpeg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Mittelpunkt_Gartenhaus_.jpeg" alt="Mittelpunkt Gartenhaus" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Mein_Shack_.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Mein_Shack_.jpg" alt="Mein Shack" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Lustig_Kopie.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Lustig_Kopie.jpg" alt="Lustig (Kopie)" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/118.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/118.jpg" alt="Foto 118" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/133jpg.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/133jpg.jpg" alt="Foto 133" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Generated_Image_hgumt0hgumt0hgum.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Generated_Image_hgumt0hgumt0hgum.jpg" alt="Generiertes Bild" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Kompakte_Moxon1.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Kompakte_Moxon1.jpg" alt="Kompakte Moxon" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/EH_RT_ZUR_ANTENNE_AUF_DEM_DACH_2.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/EH_RT_ZUR_ANTENNE_AUF_DEM_DACH_2.jpg" alt="Weg zur Antenne auf dem Dach" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/111pg.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/111pg.jpg" alt="Foto 111" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Funkwetterbericht_Erkl_rt_.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Funkwetterbericht_Erkl_rt_.jpg" alt="Funkwetterbericht erklärt" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Sonnensystem_DO1KRT_1_jpeg.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Sonnensystem_DO1KRT_1_jpeg.jpg" alt="Sonnensystem DO1KRT (1)" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Sonnesystem_DO1KRT_2jpeg.jpeg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Sonnesystem_DO1KRT_2jpeg.jpeg" alt="Sonnensystem DO1KRT (2)" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/_0643_4849_88f8_d971ae3b79ef_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/_0643_4849_88f8_d971ae3b79ef_png.jpg" alt="Bild DO1KRT" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Nur_auf_der_S_dseite_Gartenhaus.jpeg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Nur_auf_der_S_dseite_Gartenhaus.jpeg" alt="Auf der S&uuml;dseite Gartenhaus" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/QTH_STEIN_VON_OBEN_.jpeg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/QTH_STEIN_VON_OBEN_.jpeg" alt="QTH Stein von oben" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/_eceb_49ce_9606_cc351b3839a2_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/_eceb_49ce_9606_cc351b3839a2_png.jpg" alt="Bild DO1KRT" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/NKS_TO_VISIT_MAY_PAGE_anders_jpg.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/NKS_TO_VISIT_MAY_PAGE_anders_jpg.jpg" alt="NKS &ndash; Visit My Page" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Aufbau_MOXON_JO30RR.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Aufbau_MOXON_JO30RR.jpg" alt="Aufbau Moxon-Antenne JO30RR" loading="lazy" decoding="async" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/_860d_4128_bf5f_2b177dc3d77e_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/_860d_4128_bf5f_2b177dc3d77e_png.jpg" alt="Aufbau Moxon-Antenne JO30RR (2)" loading="lazy" decoding="async" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/_5e98_41c4_8051_7dae974f2c50_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/_5e98_41c4_8051_7dae974f2c50_png.jpg" alt="Aufbau Moxon-Antenne JO30RR (2)" loading="lazy" decoding="async" />
+            </a>
+          </figure>          
+        </div>
+      </section>
+
+      <!-- ===== QSO-Karten: zoombare Bilder =====
+           Neues Bild hinzufügen: [figure class="dk-photo"]-Block kopieren,
+           src + href auf dieselbe Bild-URL unter /hampages/do1krt/ setzen.
+           Klick öffnet das Bild in Originalgröße (Fenster "do1krt-zoom"). -->
+      <section class="dk-section">
+        <div class="dk-section-head"><h2>QSO-Karten</h2></div>
+        <div class="dk-gallery">
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/_f4c2_4340_9c0f_c3afc4c69678_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/_f4c2_4340_9c0f_c3afc4c69678_png.jpg" alt="QSO-Karte" loading="lazy" decoding="async" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/108_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/108_png.jpg" alt="QSO-Karte 108" loading="lazy" decoding="async" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/109_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/109_png.jpg" alt="QSO-Karte 109" loading="lazy" decoding="async" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/114.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/114.jpg" alt="QSO-Karte 114" loading="lazy" decoding="async" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/AZIMUTHAL_MAP_JO30RR_MIT_RAHMEN.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/AZIMUTHAL_MAP_JO30RR_MIT_RAHMEN.jpg" alt="Azimutale Karte JO30RR mit Rahmen" loading="lazy" decoding="async" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Generated_Image_32xemk32xemk32xe.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Generated_Image_32xemk32xemk32xe.jpg" alt="QSO-Karte (Grafik)" loading="lazy" decoding="async" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Karte_mit_allen_DXCCsjpg.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Karte_mit_allen_DXCCsjpg.jpg" alt="Karte mit allen DXCCs" loading="lazy" decoding="async" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Unbenannt100.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Unbenannt100.jpg" alt="QSO-Karte Unbenannt100" loading="lazy" decoding="async" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Unbenannt101.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Unbenannt101.jpg" alt="QSO-Karte Unbenannt101" loading="lazy" decoding="async" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Unbenannt102.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Unbenannt102.jpg" alt="QSO-Karte Unbenannt102" loading="lazy" decoding="async" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Unbenannt103.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Unbenannt103.jpg" alt="QSO-Karte Unbenannt103" loading="lazy" decoding="async" />
+            </a>
+          </figure>
+          <figure class="dk-photo">
+            <a class="dk-zoom" href="/hampages/do1krt/Unbenannt106.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Bild in Originalgröße öffnen">
+              <img src="/hampages/do1krt/Unbenannt106.jpg" alt="QSO-Karte Unbenannt106" loading="lazy" decoding="async" />
+            </a>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ===== Award-Kacheln (eQSL)
+           Bilder nach /hampages/do1krt/ hochladen (award_*.jpg).
+           Neue Kachel: [a class="dk-award"]-Block kopieren.
+           Klick öffnet das Bild in Originalgröße (neues Fenster).
+      -->
+      <section class="dk-section">
+        <div class="dk-section-head"><h2>Awards</h2><span class="dk-tag">eQSL.cc</span></div>
+                <div class="dk-awards">
+          <a class="dk-award" href="/hampages/do1krt/2025_WWW_DX_CONTEST.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/2025_WWW_DX_CONTEST.jpg" alt="Award 2025_WWW_DX_CONTEST.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/Generated_Image_ozl93pozl93pozl9.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/Generated_Image_ozl93pozl93pozl9.jpg" alt="Award Generated_Image_ozl93pozl93pozl9.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/Italien.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/Italien.jpg" alt="Award Italien.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/Unbenannt10.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/Unbenannt10.jpg" alt="Award Unbenannt10.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/Unbenannt11.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/Unbenannt11.jpg" alt="Award Unbenannt11.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/Unbenannt12.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/Unbenannt12.jpg" alt="Award Unbenannt12.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/Unbenannt13.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/Unbenannt13.jpg" alt="Award Unbenannt13.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/Unbenannt14.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/Unbenannt14.jpg" alt="Award Unbenannt14.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/Unbenannt2.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/Unbenannt2.jpg" alt="Award Unbenannt2.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/Unbenannt3.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/Unbenannt3.jpg" alt="Award Unbenannt3.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/Unbenannt6.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/Unbenannt6.jpg" alt="Award Unbenannt6.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/Unbenannt7.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/Unbenannt7.jpg" alt="Award Unbenannt7.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/Unbenannt8.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/Unbenannt8.jpg" alt="Award Unbenannt8.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/Unbenannt_4jpg.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/Unbenannt_4jpg.jpg" alt="Award Unbenannt_4jpg.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/Unbenannt_5jpg.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/Unbenannt_5jpg.jpg" alt="Award Unbenannt_5jpg.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/_0e16_4ed3_ac71_95236af8fd26_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/_0e16_4ed3_ac71_95236af8fd26_png.jpg" alt="Award _0e16_4ed3_ac71_95236af8fd26_png.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/_ccad_4d7e_b773_02507cb57431_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/_ccad_4d7e_b773_02507cb57431_png.jpg" alt="Award _ccad4d7e_b773_02507cb57431_png.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/_d5aa_45ec_b61d_ff9024dad8a3_png.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/_d5aa_45ec_b61d_ff9024dad8a3_png.jpg" alt="Award _d5aa_45ec_b61d_ff9024dad8a3_png.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/nk_Diplomen_des_DARC_und_der_DIG.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/nk_Diplomen_des_DARC_und_der_DIG.jpg" alt="Award nk_Diplomen_des_DARC_und_der_DIG.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/JAPANESE_300_AWARDpg.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/JAPANESE_300_AWARDpg.jpg" alt="Award JAPANESE_300_AWARDpg.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/E_QSL_AWARD_1.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/E_QSL_AWARD_1.jpg" alt="Award E_QSL_AWARD_1.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/E_QSL_AWARD_2.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/E_QSL_AWARD_2.jpg" alt="Award E_QSL_AWARD_2.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/E_QSL_AWARD_3.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/E_QSL_AWARD_3.jpg" alt="Award E_QSL_AWARD_3.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/E_QSL_AWARD_4.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/E_QSL_AWARD_4.jpg" alt="Award E_QSL_AWARD_4.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/E_QSL_AWARD_5.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/E_QSL_AWARD_5.jpg" alt="Award E_QSL_AWARD_5.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/E_QSL_AWARD_6.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/E_QSL_AWARD_6.jpg" alt="Award E_QSL_AWARD_6.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/E_QSL_AWARD_7.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/E_QSL_AWARD_7.jpg" alt="Award E_QSL_AWARD_7.jpg" loading="lazy" decoding="async" />
+          </a>
+          <a class="dk-award" href="/hampages/do1krt/E_QSL_AWARD_8.jpg" target="do1krt-zoom" rel="noopener noreferrer" title="Award – Bild vergrößern">
+            <img src="/hampages/do1krt/E_QSL_AWARD_8.jpg" alt="Award E_QSL_AWARD_8.jpg" loading="lazy" decoding="async" />
+          </a>
+        </div>
+      </section>
+
+    </main>
+  </div>

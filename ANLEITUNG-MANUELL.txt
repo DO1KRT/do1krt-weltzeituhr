@@ -1,0 +1,88 @@
+========================================================
+  DO1KRT Weltzeituhr – manuell nach GitHub + Netlify
+========================================================
+
+DATEIEN IN DIESEM ORDNER
+------------------------
+  index.html                 = die Weltzeituhr (wichtigste Datei)
+  netlify.toml               = Netlify-Einstellungen
+  _headers                   = iFrame auf QRZ erlauben
+  DO1KRT-qrz-snippet.html    = komplette QRZ-Seite zum Kopieren
+  README.md                  = Projektbeschreibung
+  .gitignore                 = optional
+
+
+TEIL 1 – REPO AUF GITHUB ANLEGEN
+--------------------------------
+1. Browser:  https://github.com/new
+2. Repository name:   do1krt-weltzeituhr
+3. Public  (oder Private)
+4. Haken bei "Add a README file"  OPTIONAL setzen
+   (wenn du ihn setzt, ist das Repo nicht leer – Upload geht trotzdem)
+5. Create repository
+
+
+TEIL 2 – DATEIEN HOCHLADEN (Web-Upload)
+---------------------------------------
+1. Im neuen Repo auf den Button klicken:
+      "uploading an existing file"
+   ODER:  Add file  →  Upload files
+
+2. ALLE Dateien aus diesem Ordner
+   per Drag & Drop in das Browser-Fenster ziehen:
+      index.html
+      netlify.toml
+      _headers
+      DO1KRT-qrz-snippet.html
+      README.md
+      .gitignore
+      (ANLEITUNG-MANUELL.txt brauchst du nicht hochladen)
+
+3. Unten:
+      Commit message:  Initial: DO1KRT Weltzeituhr Luxartec-LED
+      →  Commit changes
+
+
+TEIL 3 – NETLIFY MIT GITHUB VERBINDEN
+-------------------------------------
+1. https://app.netlify.com  → einloggen
+2. Add new site  →  Import an existing project
+3. GitHub wählen, Repo do1krt-weltzeituhr erlauben/auswählen
+4. Einstellungen:
+      Branch:              main   (oder master)
+      Build command:       (leer lassen)
+      Publish directory:   .
+5. Deploy site
+6. Fertige URL notieren, z.B.
+      https://do1krt-weltzeituhr.netlify.app
+
+
+TEIL 3b – ALTE SITE BEHALTEN (profound-pony-…)
+----------------------------------------------
+Falls die URL profound-pony-49ee1d.netlify.app bleiben soll:
+  Site öffnen → Project configuration → Build & deploy
+  → Continuous deployment → Link repository
+  → gleiches GitHub-Repo wählen, Publish directory = .
+
+
+TEIL 4 – QRZ EINBETTEN
+----------------------
+1. Datei DO1KRT-qrz-snippet.html öffnen
+2. Die Netlify-URL an ZWEI Stellen eintragen
+   (suchen nach: profound-pony-49ee1d.netlify.app
+    und durch deine neue URL ersetzen, inkl. ?v=lux-3)
+3. Kompletten Inhalt nach QRZ.com → DO1KRT → HTML/BIO kopieren
+4. Speichern, Seite mit Strg+F5 neu laden
+
+
+SPÄTERE ÄNDERUNGEN
+------------------
+1. index.html lokal ändern
+2. GitHub → Datei anklicken → Bleistift-Icon (Edit)
+   ODER: Add file → Upload files (überschreibt)
+3. Commit
+4. Netlify deployed automatisch in ~30 Sekunden
+5. In QRZ optional ?v=lux-3 auf ?v=lux-4 erhöhen (Cache)
+
+
+FERTIG.
