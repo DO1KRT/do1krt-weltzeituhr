@@ -1,8 +1,13 @@
-# DO1KRT Weltzeituhr – Netlify (GitHub Continuous Deploy)
+# DO1KRT Weltzeituhr – Netlify + Edge SSR (Zeiten ohne JS)
 
 [build]
   publish = "."
-  command = "echo static"
+  command = "echo static+edge"
+
+# Edge Function liefert HTML mit fertigen Zeiten (QRZ-Sandbox-sicher)
+[[edge_functions]]
+  function = "clock"
+  path = "/*"
 
 [[headers]]
   for = "/*"
@@ -10,9 +15,4 @@
     Content-Security-Policy = "frame-ancestors *"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Cache-Control = "public, max-age=300, must-revalidate"
-
-[[headers]]
-  for = "/index.html"
-  [headers.values]
-    Cache-Control = "public, max-age=60, must-revalidate"
+    Cache-Control = "public, max-age=10, must-revalidate"
